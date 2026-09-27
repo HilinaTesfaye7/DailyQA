@@ -1,0 +1,32 @@
+.nav {
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+  padding: 1rem 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.brand {
+  font-weight: 700;
+  font-size: 1.25rem;
+  background: linear-gradient(to right, #60a5fa, #3b82f6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.links {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+}
+
+.link {
+  color: var(--text-muted);
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.link:hover, .active {
+  color: var(--text);
+}

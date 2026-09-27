@@ -1,0 +1,127 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model QALead {
+  id           String   @id @default(uuid())
+  username     String   @unique
+  passwordHash String
+  telegramId   String?  @unique
+  botState     String?  @default("IDLE")
+  createdAt    DateTime @default(now())
+}
+
+model Tester {
+  id               String       @id @default(uuid())
+  telegramId       String       @unique
+  fullName         String
+  status           String       @default("PENDING_ASSIGNMENT") // "PENDING_ASSIGNMENT" or "ACTIVE" or "INACTIVE"
+  botState         String       @default("IDLE") // Tracks Telegram conversation state
+  botProjectId     String?      // Temporary tracker for selected project
+  botModuleId      String?      // Temporary tracker for selected module
+  botStateData     String?      // Temporary JSON storage for conversational flow
+  lastRemindedDate String?      // YYYY-MM-DD string to prevent duplicate reminders
+  registrationDate DateTime     @default(now())
+  assignments      Assignment[]
+  checkIns         CheckIn[]
+  testCases        TestCase[]
+}
+
+model Project {
+  id             String       @id @default(uuid())
+  name           String
+  description    String?
+  productOwner   String?
+  startDate      DateTime?
+  deadline       DateTime?
+  prdLink        String?
+  figmaLink      String?
+  status         String       @default("ACTIVE")
+  subProjects    SubProject[]
+  modules        Module[]
+  assignments    Assignment[]
+  checkIns       CheckIn[]
+  testCases      TestCase[]
+  createdAt      DateTime     @default(now())
+}
+
+model SubProject {
+  id          String       @id @default(uuid())
+  projectId   String
+  name        String
+  project     Project      @relation(fields: [projectId], references: [id])
+  modules     Module[]
+  assignments Assignment[]
+}
+
+model Module {
+  id           String       @id @default(uuid())
+  projectId    String
+  subProjectId String?
+  name         String
+  project      Project      @relation(fields: [projectId], references: [id])
+  subProject   SubProject?  @relation(fields: [subProjectId], references: [id])
+  assignments  Assignment[]
+  checkIns     CheckIn[]
+}
+
+model Assignment {
+  id           String      @id @default(uuid())
+  testerId     String
+  projectId    String
+  subProjectId String?
+  moduleId     String?
+  tester       Tester      @relation(fields: [testerId], references: [id])
+  project      Project     @relation(fields: [projectId], references: [id])
+  subProject   SubProject? @relation(fields: [subProjectId], references: [id])
+  module       Module?     @relation(fields: [moduleId], references: [id])
+  totalTests   Int         @default(0)
+  assignedAt   DateTime    @default(now())
+}
+
+model CheckIn {
+  id                 String    @id @default(uuid())
+  testerId           String
+  projectId          String
+  moduleId           String
+  date               DateTime  @default(now())
+  ethiopiaDate       String    // Stored as YYYY-MM-DD in Africa/Addis_Ababa time
+  workCompleted      String
+  hasBlocker         Boolean   @default(false)
+  blockerDescription String?
+  nextPlan           String
+  achievement        String
+  testsExecuted      Int       @default(0)
+  testsPassed        Int       @default(0)
+  testsFailed        Int       @default(0)
+  testsBlocked       Int       @default(0)
+  tester             Tester    @relation(fields: [testerId], references: [id])
+  project            Project   @relation(fields: [projectId], references: [id])
+  module             Module    @relation(fields: [moduleId], references: [id])
+  blockers           Blocker[]
+}
+
+model Blocker {
+  id          String   @id @default(uuid())
+  checkInId   String
+  description String
+  status      String   @default("OPEN") // "OPEN" or "RESOLVED"
+  checkIn     CheckIn  @relation(fields: [checkInId], references: [id])
+  createdAt   DateTime @default(now())
+  resolvedAt  DateTime?
+}
+
+model TestCase {
+  id        String   @id @default(uuid())
+  projectId String
+  testerId  String
+  content   String   // The link or text submitted
+  createdAt DateTime @default(now())
+  project   Project  @relation(fields: [projectId], references: [id])
+  tester    Tester   @relation(fields: [testerId], references: [id])
+}
