@@ -50,13 +50,10 @@ export async function POST(request: Request) {
           await prisma.qALead.update({
             where: { id: lead.id },
             data: { telegramId }
-          });
-          sendMessage('✅ Successfully authenticated as QA Lead. You will now receive blocker and achievement alerts.\n\nType /status to check project readiness.');
-        } else {
-          sendMessage('❌ No QA Lead account found in the system to link.');
+          }); sendMessage('✅ Successfully authenticated as QA Lead. You will now receive blocker and achievement alerts.\n\nType /status to check project readiness.');
+        } else { sendMessage('❌ No QA Lead account found in the system to link.');
         }
-      } else {
-        sendMessage('❌ Invalid lead authentication password.');
+      } else { sendMessage('❌ Invalid lead authentication password.');
       }
       return NextResponse.json({ success: true });
     }
@@ -84,8 +81,7 @@ export async function POST(request: Request) {
         p.checkIns.forEach(ci => openBlockers += ci.blockers.length);
         const readiness = openBlockers > 0 ? '🔴 AT RISK' : '🟢 READY';
         statusMsg += `*${p.name}* - ${readiness}\nBlockers: ${openBlockers}\n\n`;
-      });
-      sendMessage(statusMsg);
+      }); sendMessage(statusMsg);
       return NextResponse.json({ success: true });
     }
 
@@ -96,8 +92,7 @@ export async function POST(request: Request) {
         include: { tester: true, project: true, module: true }
       });
 
-      if (checkIns.length === 0) {
-        sendMessage('No daily check-ins reported today yet.');
+      if (checkIns.length === 0) { sendMessage('No daily check-ins reported today yet.');
       } else {
         let msg = `📅 *Daily Check-in Report (${ethiopiaToday})*\n\n`;
         checkIns.forEach(ci => {
@@ -106,8 +101,7 @@ export async function POST(request: Request) {
           if (ci.module) msg += `🧩 *Module*: ${ci.module.name}\n`;
           msg += `📝 *Completed*: ${ci.workCompleted}\n`;
           msg += `----------------------\n`;
-        });
-        sendMessage(msg);
+        }); sendMessage(msg);
       }
       return NextResponse.json({ success: true });
     }
@@ -154,23 +148,18 @@ export async function POST(request: Request) {
         msg += `*${project.name}* - ${isReady ? '🟢 READY FOR RELEASE' : '🔴 IN TESTING'}\n`;
         msg += `Progress: ${progress}% (${testsPassed}/${totalTests} Passed)\n`;
         msg += `Active Blockers: ${openBlockers}\n\n`;
-      });
-      sendMessage(msg);
+      }); sendMessage(msg);
       return NextResponse.json({ success: true });
     }
 
     // 1. Handle Registration: /start
     if (text === '/start') {
       if (tester) {
-        if (tester.botState === 'AWAITING_ROLE') {
-          sendMessage('Are you a QA Lead or a Tester? (Reply "Lead" or "Tester")');
-        } else if (tester.botState === 'AWAITING_NAME') {
-          sendMessage('Please enter your full name.');
-        } else {
-          sendMessage('You are already registered with AegisQA.');
+        if (tester.botState === 'AWAITING_ROLE') { sendMessage('Are you a QA Lead or a Tester? (Reply "Lead" or "Tester")');
+        } else if (tester.botState === 'AWAITING_NAME') { sendMessage('Please enter your full name.');
+        } else { sendMessage('You are already registered with AegisQA.');
         }
-      } else if (qaLead) {
-        sendMessage('You are already registered as a QA Lead.');
+      } else if (qaLead) { sendMessage('You are already registered as a QA Lead.');
       } else {
         await prisma.tester.create({
           data: {
@@ -179,8 +168,7 @@ export async function POST(request: Request) {
             status: 'PENDING_ASSIGNMENT',
             botState: 'AWAITING_ROLE'
           }
-        });
-        sendMessage('Welcome to AegisQA 👋\n\nAre you a QA Lead or a Tester? (Reply "Lead" or "Tester")');
+        }); sendMessage('Welcome to AegisQA 👋\n\nAre you a QA Lead or a Tester? (Reply "Lead" or "Tester")');
       }
       return NextResponse.json({ success: true });
     }
@@ -195,16 +183,13 @@ export async function POST(request: Request) {
             passwordHash: 'N/A',
             telegramId: telegramId
           }
-        });
-        sendMessage('✅ Successfully registered as QA Lead. You will receive blocker and achievement alerts.\n\nAvailable commands:\n/status - Basic project status\n/report - Daily check-in report\n/readiness - Overall project readiness');
+        }); sendMessage('✅ Successfully registered as QA Lead. You will receive blocker and achievement alerts.\n\nAvailable commands:\n/status - Basic project status\n/report - Daily check-in report\n/readiness - Overall project readiness');
       } else if (role === 'tester') {
         await prisma.tester.update({
           where: { telegramId },
           data: { botState: 'AWAITING_NAME' }
-        });
-        sendMessage('Great! Please enter your full name:');
-      } else {
-        sendMessage('Please reply with exactly "Lead" or "Tester".');
+        }); sendMessage('Great! Please enter your full name:');
+      } else { sendMessage('Please reply with exactly "Lead" or "Tester".');
       }
       return NextResponse.json({ success: true });
     }
@@ -212,8 +197,7 @@ export async function POST(request: Request) {
     // 3. Handle incoming test case submission
     if (tester && tester.botState === 'AWAITING_TESTCASE') {
       if (text.toLowerCase() !== 'skip') {
-        if (!tester.botProjectId) {
-           sendMessage('Error: No project context found. Please contact an admin.');
+        if (!tester.botProjectId) { sendMessage('Error: No project context found. Please contact an admin.');
         } else {
            await prisma.testCase.create({
              data: {
@@ -239,8 +223,7 @@ export async function POST(request: Request) {
       await prisma.tester.update({
         where: { id: tester.id },
         data: { botState: 'IDLE', botProjectId: null }
-      });
-      sendMessage('Got it! You are now fully setup for this project. Use /checkin when you are ready to report your daily standup.');
+      }); sendMessage('Got it! You are now fully setup for this project. Use /checkin when you are ready to report your daily standup.');
       return NextResponse.json({ success: true });
     }
 
@@ -254,20 +237,17 @@ export async function POST(request: Request) {
           status: 'PENDING_ASSIGNMENT',
           botState: 'IDLE'
         }
-      });
-      sendMessage(`Thank you, ${fullName}.\n\nYour registration has been received successfully.\n\nYou have not been assigned to a project yet.\n\nPlease wait for the QA Lead to assign you to a project.\n\nYou will receive a notification when you are assigned.`);
+      }); sendMessage(`Thank you, ${fullName}.\n\nYour registration has been received successfully.\n\nYou have not been assigned to a project yet.\n\nPlease wait for the QA Lead to assign you to a project.\n\nYou will receive a notification when you are assigned.`);
       return NextResponse.json({ success: true });
     }
 
     // 3. Handle Workflow: /checkin (Project Selection Initiation)
     if (text === '/checkin') {
-      if (!tester) {
-        sendMessage('You are not registered.');
+      if (!tester) { sendMessage('You are not registered.');
         return NextResponse.json({ success: true });
       }
 
-      if (tester.status === 'PENDING_ASSIGNMENT' || tester.assignments.length === 0) {
-        sendMessage('You are not currently assigned to any projects. Please wait for an assignment.');
+      if (tester.status === 'PENDING_ASSIGNMENT' || tester.assignments.length === 0) { sendMessage('You are not currently assigned to any projects. Please wait for an assignment.');
         return NextResponse.json({ success: true });
       }
 
@@ -287,8 +267,7 @@ export async function POST(request: Request) {
             botState: 'AWAITING_BLOCKER_RESOLUTION',
             botStateData: JSON.stringify({ blockerId: blocker.id })
           }
-        });
-        sendMessage(`Before checking in, you have an unresolved blocker from a previous check-in on project ${blocker.checkIn.project.name}:\n\n"${blocker.description}"\n\nIs this blocker resolved? (Reply Yes or No)`);
+        }); sendMessage(`Before checking in, you have an unresolved blocker from a previous check-in on project ${blocker.checkIn.project.name}:\n\n"${blocker.description}"\n\nIs this blocker resolved? (Reply Yes or No)`);
         return NextResponse.json({ success: true });
       }
 
@@ -302,8 +281,7 @@ export async function POST(request: Request) {
       });
 
       const projectsList = Array.from(uniqueProjects.values());
-      if (projectsList.length === 0) {
-        sendMessage('You do not have any active projects to check in on right now.');
+      if (projectsList.length === 0) { sendMessage('You do not have any active projects to check in on right now.');
         return NextResponse.json({ success: true });
       }
       
@@ -320,9 +298,7 @@ export async function POST(request: Request) {
           botModuleId: null,
           botStateData: null
         }
-      });
-
-      sendMessage(msg.trim());
+      }); sendMessage(msg.trim());
       return NextResponse.json({ success: true });
     }
 
@@ -344,12 +320,9 @@ export async function POST(request: Request) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ chat_id: lead.telegramId, text: alertMsg, parse_mode: 'Markdown' })
           }).catch(() => {});
-        }
-        sendMessage('Great! Blocker marked as resolved.');
-      } else if (normalized === 'no' || normalized === 'n') {
-        sendMessage('Okay, blocker remains open.');
-      } else {
-        sendMessage('Please reply with Yes or No.');
+        } sendMessage('Great! Blocker marked as resolved.');
+      } else if (normalized === 'no' || normalized === 'n') { sendMessage('Okay, blocker remains open.');
+      } else { sendMessage('Please reply with Yes or No.');
         return NextResponse.json({ success: true });
       }
 
@@ -367,8 +340,7 @@ export async function POST(request: Request) {
         await prisma.tester.update({
           where: { telegramId },
           data: { botState: 'IDLE', botStateData: null }
-        });
-        sendMessage('You do not have any active projects to check in on right now.');
+        }); sendMessage('You do not have any active projects to check in on right now.');
         return NextResponse.json({ success: true });
       }
       
@@ -385,9 +357,7 @@ export async function POST(request: Request) {
           botModuleId: null,
           botStateData: null
         }
-      });
-
-      sendMessage(msg.trim());
+      }); sendMessage(msg.trim());
       return NextResponse.json({ success: true });
     }
 
@@ -405,8 +375,7 @@ export async function POST(request: Request) {
       });
       const projectsList = Array.from(uniqueProjects.values());
 
-      if (isNaN(selectionIndex) || selectionIndex < 0 || selectionIndex >= projectsList.length) {
-        sendMessage('Invalid selection. Please reply with the number corresponding to your project.');
+      if (isNaN(selectionIndex) || selectionIndex < 0 || selectionIndex >= projectsList.length) { sendMessage('Invalid selection. Please reply with the number corresponding to your project.');
         return NextResponse.json({ success: true });
       }
 
@@ -439,8 +408,7 @@ export async function POST(request: Request) {
             botProjectId: null,
             botModuleId: null
           }
-        });
-        sendMessage(`You selected: ${selectedProject.name}, but you have no assignments under this project. Please contact the QA Lead.`);
+        }); sendMessage(`You selected: ${selectedProject.name}, but you have no assignments under this project. Please contact the QA Lead.`);
         return NextResponse.json({ success: true });
       }
 
@@ -452,8 +420,7 @@ export async function POST(request: Request) {
             botProjectId: selectedProject.id,
             botModuleId: modulesList[0].id
           }
-        });
-        sendMessage(`Automatically selected: ${modulesList[0].name}\n\nWhat did you work on today?`);
+        }); sendMessage(`Automatically selected: ${modulesList[0].name}\n\nWhat did you work on today?`);
         return NextResponse.json({ success: true });
       }
 
@@ -468,9 +435,7 @@ export async function POST(request: Request) {
           botState: 'AWAITING_MODULE_SELECTION',
           botProjectId: selectedProject.id 
         }
-      });
-
-      sendMessage(msg.trim());
+      }); sendMessage(msg.trim());
       return NextResponse.json({ success: true });
     }
 
@@ -496,8 +461,7 @@ export async function POST(request: Request) {
         modulesList.push({ id: 'NONE', name: 'Full Project' });
       }
 
-      if (isNaN(selectionIndex) || selectionIndex < 0 || selectionIndex >= modulesList.length) {
-        sendMessage('Invalid selection. Please reply with the number corresponding to your module.');
+      if (isNaN(selectionIndex) || selectionIndex < 0 || selectionIndex >= modulesList.length) { sendMessage('Invalid selection. Please reply with the number corresponding to your module.');
         return NextResponse.json({ success: true });
       }
 
@@ -509,9 +473,7 @@ export async function POST(request: Request) {
           botState: 'AWAITING_WORK_SUMMARY',
           botModuleId: selectedModule.id 
         }
-      });
-
-      sendMessage('What did you work on today?');
+      }); sendMessage('What did you work on today?');
       return NextResponse.json({ success: true });
     }
 
@@ -521,8 +483,7 @@ export async function POST(request: Request) {
     if (tester && tester.botState === 'AWAITING_WORK_SUMMARY') {
       const payload = getPayload();
       payload.workCompleted = text;
-      await savePayload('AWAITING_BLOCKER_STATUS', payload);
-      sendMessage('Did you encounter a blocker? (Yes/No)');
+      await savePayload('AWAITING_BLOCKER_STATUS', payload); sendMessage('Did you encounter a blocker? (Yes/No)');
       return NextResponse.json({ success: true });
     }
 
@@ -532,15 +493,12 @@ export async function POST(request: Request) {
       const normalized = text.toLowerCase();
       if (normalized === 'yes' || normalized === 'y') {
         payload.hasBlocker = true;
-        await savePayload('AWAITING_BLOCKER_DETAILS', payload);
-        sendMessage('Please provide blocker details:');
+        await savePayload('AWAITING_BLOCKER_DETAILS', payload); sendMessage('Please provide blocker details:');
       } else if (normalized === 'no' || normalized === 'n') {
         payload.hasBlocker = false;
         payload.blockerDescription = null;
-        await savePayload('AWAITING_NEXT_PLAN', payload);
-        sendMessage('What is your next plan?');
-      } else {
-        sendMessage('Please reply with Yes or No.');
+        await savePayload('AWAITING_NEXT_PLAN', payload); sendMessage('What is your next plan?');
+      } else { sendMessage('Please reply with Yes or No.');
       }
       return NextResponse.json({ success: true });
     }
@@ -549,8 +507,7 @@ export async function POST(request: Request) {
     if (tester && tester.botState === 'AWAITING_BLOCKER_DETAILS') {
       const payload = getPayload();
       payload.blockerDescription = text;
-      await savePayload('AWAITING_NEXT_PLAN', payload);
-      sendMessage('What is your next plan?');
+      await savePayload('AWAITING_NEXT_PLAN', payload); sendMessage('What is your next plan?');
       return NextResponse.json({ success: true });
     }
 
@@ -558,8 +515,7 @@ export async function POST(request: Request) {
     if (tester && tester.botState === 'AWAITING_NEXT_PLAN') {
       const payload = getPayload();
       payload.nextPlan = text;
-      await savePayload('AWAITING_ACHIEVEMENT', payload);
-      sendMessage('What did you achieve today?');
+      await savePayload('AWAITING_ACHIEVEMENT', payload); sendMessage('What did you achieve today?');
       return NextResponse.json({ success: true });
     }
 
@@ -578,11 +534,9 @@ export async function POST(request: Request) {
 
       if (assignment && assignment.totalTests > 0) {
         payload.totalTests = assignment.totalTests;
-        await savePayload('AWAITING_TESTS_EXECUTED', payload);
-        sendMessage('How many test cases did you execute? (Number only)');
+        await savePayload('AWAITING_TESTS_EXECUTED', payload); sendMessage('How many test cases did you execute? (Number only)');
       } else {
-        await savePayload('AWAITING_TOTAL_TESTS', payload);
-        sendMessage('How many total test cases are planned/assigned? (Number only)');
+        await savePayload('AWAITING_TOTAL_TESTS', payload); sendMessage('How many total test cases are planned/assigned? (Number only)');
       }
       return NextResponse.json({ success: true });
     }
@@ -596,8 +550,7 @@ export async function POST(request: Request) {
     // 6e2. AWAITING_TOTAL_TESTS
     if (tester && tester.botState === 'AWAITING_TOTAL_TESTS') {
       const num = parseNum(text);
-      if (num === null || num === 0) {
-        sendMessage('Please enter a valid positive number greater than 0.');
+      if (num === null || num === 0) { sendMessage('Please enter a valid positive number greater than 0.');
         return NextResponse.json({ success: true });
       }
       
@@ -613,8 +566,7 @@ export async function POST(request: Request) {
         data: { totalTests: num }
       });
 
-      await savePayload('AWAITING_TESTS_EXECUTED', payload);
-      sendMessage('How many test cases did you execute? (Number only)');
+      await savePayload('AWAITING_TESTS_EXECUTED', payload); sendMessage('How many test cases did you execute? (Number only)');
       return NextResponse.json({ success: true });
     }
 
@@ -622,68 +574,58 @@ export async function POST(request: Request) {
     // 6f. AWAITING_TESTS_EXECUTED
     if (tester && tester.botState === 'AWAITING_TESTS_EXECUTED') {
       const num = parseNum(text);
-      if (num === null) {
-        sendMessage('Please enter a valid positive number.');
+      if (num === null) { sendMessage('Please enter a valid positive number.');
         return NextResponse.json({ success: true });
       }
       
       const payload = getPayload();
-      if (num > (payload.totalTests || 0)) {
-        sendMessage(`You cannot execute more tests (${num}) than the total planned (${payload.totalTests}). Please enter a valid number.`);
+      if (num > (payload.totalTests || 0)) { sendMessage(`You cannot execute more tests (${num}) than the total planned (${payload.totalTests}). Please enter a valid number.`);
         return NextResponse.json({ success: true });
       }
 
       payload.testsExecuted = num;
-      await savePayload('AWAITING_TESTS_PASSED', payload);
-      sendMessage('How many test cases passed? (Number only)');
+      await savePayload('AWAITING_TESTS_PASSED', payload); sendMessage('How many test cases passed? (Number only)');
       return NextResponse.json({ success: true });
     }
 
     // 6g. AWAITING_TESTS_PASSED
     if (tester && tester.botState === 'AWAITING_TESTS_PASSED') {
       const num = parseNum(text);
-      if (num === null) {
-        sendMessage('Please enter a valid positive number.');
+      if (num === null) { sendMessage('Please enter a valid positive number.');
         return NextResponse.json({ success: true });
       }
       
       const payload = getPayload();
-      if (num > payload.testsExecuted) {
-        sendMessage(`You cannot have more passed tests (${num}) than executed tests (${payload.testsExecuted}). Please enter a valid number.`);
+      if (num > payload.testsExecuted) { sendMessage(`You cannot have more passed tests (${num}) than executed tests (${payload.testsExecuted}). Please enter a valid number.`);
         return NextResponse.json({ success: true });
       }
 
       payload.testsPassed = num;
-      await savePayload('AWAITING_TESTS_FAILED', payload);
-      sendMessage('How many test cases failed? (Number only)');
+      await savePayload('AWAITING_TESTS_FAILED', payload); sendMessage('How many test cases failed? (Number only)');
       return NextResponse.json({ success: true });
     }
 
     // 6h. AWAITING_TESTS_FAILED
     if (tester && tester.botState === 'AWAITING_TESTS_FAILED') {
       const num = parseNum(text);
-      if (num === null) {
-        sendMessage('Please enter a valid positive number.');
+      if (num === null) { sendMessage('Please enter a valid positive number.');
         return NextResponse.json({ success: true });
       }
       
       const payload = getPayload();
-      if (payload.testsPassed + num > payload.testsExecuted) {
-        sendMessage(`Passed (${payload.testsPassed}) + Failed (${num}) cannot exceed total Executed (${payload.testsExecuted}). Please enter a valid number.`);
+      if (payload.testsPassed + num > payload.testsExecuted) { sendMessage(`Passed (${payload.testsPassed}) + Failed (${num}) cannot exceed total Executed (${payload.testsExecuted}). Please enter a valid number.`);
         return NextResponse.json({ success: true });
       }
 
       payload.testsFailed = num;
-      await savePayload('AWAITING_TESTS_BLOCKED', payload);
-      sendMessage('How many test cases were blocked? (Number only)');
+      await savePayload('AWAITING_TESTS_BLOCKED', payload); sendMessage('How many test cases were blocked? (Number only)');
       return NextResponse.json({ success: true });
     }
 
     // 6i. AWAITING_TESTS_BLOCKED (Final Step - Save DB)
     if (tester && tester.botState === 'AWAITING_TESTS_BLOCKED') {
       const num = parseNum(text);
-      if (num === null) {
-        sendMessage('Please enter a valid number.');
+      if (num === null) { sendMessage('Please enter a valid number.');
         return NextResponse.json({ success: true });
       }
       
@@ -759,15 +701,12 @@ export async function POST(request: Request) {
           botModuleId: null,
           botStateData: null
         }
-      });
-
-      sendMessage('✅ Daily QA check-in submitted.');
+      }); sendMessage('✅ Daily QA check-in submitted.');
       return NextResponse.json({ success: true });
     }
 
     // Fallback
-    if (tester) {
-      sendMessage('Your message was received, but no active command was triggered.');
+    if (tester) { sendMessage('Your message was received, but no active command was triggered.');
     }
 
     return NextResponse.json({ success: true });
