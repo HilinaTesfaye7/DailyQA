@@ -128,7 +128,20 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     const progress = totalTests > 0 ? Math.min(100, Math.round((testsPassed / totalTests) * 100)) : 0;
     const isReady = totalTests > 0 && testsPassed >= totalTests && !hasActiveBlocker;
 
-    return { ...project, progress, isReady, testsFailed, testsBlocked: openBlockersCountInProject };
+    const moduleStats = project.modules.map(mod => {
+      let modTotalTests = 0;
+      project.assignments.filter(a => a.moduleId === mod.id).forEach(a => {
+        modTotalTests += a.totalTests || 0;
+      });
+      let modTestsPassed = 0;
+      Array.from(latestCheckInsMap.values()).forEach(ci => {
+        if (ci.moduleId === mod.id) modTestsPassed += ci.testsPassed;
+      });
+      const modProgress = modTotalTests > 0 ? Math.min(100, Math.round((modTestsPassed / modTotalTests) * 100)) : 0;
+      return { id: mod.id, name: mod.name, progress: modProgress };
+    });
+
+    return { ...project, progress, isReady, testsFailed, testsBlocked: openBlockersCountInProject, moduleStats };
   });
 
   const overallPassRate = totalTestsExecuted > 0 ? Math.round((totalTestsPassed / totalTestsExecuted) * 100) : 0;
@@ -269,19 +282,35 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
               </div>
             </div>
             
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
-                <span style={{ color: 'var(--text-muted)' }}>Pass rate</span>
-                <span style={{ fontWeight: 600 }}>{projectStats[0]?.progress || 0}%</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
-                <span style={{ color: 'var(--text-muted)' }}>Critical bugs</span>
-                <span style={{ color: (projectStats[0]?.testsFailed || 0) > 0 ? '#f43f5e' : '#10b981', fontWeight: 600 }}>{projectStats[0]?.testsFailed || 0}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
-                <span style={{ color: 'var(--text-muted)' }}>Blockers</span>
-                <span style={{ color: (projectStats[0]?.testsBlocked || 0) > 0 ? '#f43f5e' : '#10b981', fontWeight: 600 }}>{projectStats[0]?.testsBlocked || 0}</span>
-              </div>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '100px', overflowY: 'auto', paddingRight: '0.5rem' }}>
+              {(projectStats[0]?.moduleStats || []).length > 0 ? (
+                projectStats[0].moduleStats.map((mod: any) => (
+                  <div key={mod.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', alignItems: 'center' }}>
+                    <span style={{ color: 'var(--text-muted)' }}>{mod.name}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <div style={{ width: '50px', height: '4px', background: 'var(--bg-body)', borderRadius: '2px', overflow: 'hidden' }}>
+                        <div style={{ width: `${mod.progress}%`, height: '100%', background: mod.progress === 100 ? '#10b981' : '#38bdf8' }} />
+                      </div>
+                      <span style={{ fontWeight: 600, width: '30px', textAlign: 'right', color: mod.progress === 100 ? '#10b981' : 'var(--text-main)' }}>{mod.progress}%</span>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
+                    <span style={{ color: 'var(--text-muted)' }}>Pass rate</span>
+                    <span style={{ fontWeight: 600 }}>{projectStats[0]?.progress || 0}%</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
+                    <span style={{ color: 'var(--text-muted)' }}>Critical bugs</span>
+                    <span style={{ color: (projectStats[0]?.testsFailed || 0) > 0 ? '#f43f5e' : '#10b981', fontWeight: 600 }}>{projectStats[0]?.testsFailed || 0}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
+                    <span style={{ color: 'var(--text-muted)' }}>Blockers</span>
+                    <span style={{ color: (projectStats[0]?.testsBlocked || 0) > 0 ? '#f43f5e' : '#10b981', fontWeight: 600 }}>{projectStats[0]?.testsBlocked || 0}</span>
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
