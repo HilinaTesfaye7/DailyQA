@@ -2,6 +2,8 @@ import { prisma } from '@/lib/db';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import ProjectTabsClient from './ProjectTabsClient';
+import DeleteProjectButton from './DeleteProjectButton';
+import { getSession } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,7 +17,8 @@ export default async function ViewProjectPage({ params }: { params: Promise<{ id
         include: { tester: true }
       },
       checkIns: {
-        include: { blockers: true, tester: true, module: true }
+        include: { blockers: true, tester: true, module: true },
+        orderBy: { date: 'desc' }
       },
       assignments: {
         include: { tester: true, module: true }
@@ -109,6 +112,12 @@ export default async function ViewProjectPage({ params }: { params: Promise<{ id
     met.isReady = met.totalTests > 0 && met.testsPassed >= met.totalTests && met.testsFailed === 0 && met.testsBlocked === 0 && met.openBlockers === 0;
   });
 
+  const session = await getSession();
+  const statusLabel = project.status === 'ACTIVE' ? 'IN PROGRESS' : project.status;
+  const statusBadgeClass = project.status === 'BLOCKED' ? 'badge-danger'
+    : project.status === 'COMPLETED' || project.status === 'READY FOR RELEASE' ? 'badge-success'
+    : project.status === 'INACTIVE' ? 'badge-warning' : 'badge-blue';
+
   const uniqueMembersCount = new Set(project.assignments.map(a => a.testerId)).size;
   const dailyStandupsCount = project.checkIns.length;
 
@@ -117,19 +126,17 @@ export default async function ViewProjectPage({ params }: { params: Promise<{ id
       
       {/* Top Header Card */}
       <div className="card" style={{ padding: '2rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <h1 style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--text-main)' }}>{project.name}</h1>
-            <span className="badge" style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.2)', padding: '0.25rem 0.75rem', borderRadius: '4px', letterSpacing: '0.5px' }}>ACTIVE</span>
-            <span className="badge" style={{ background: 'rgba(168, 85, 247, 0.1)', color: '#a855f7', border: '1px solid rgba(168, 85, 247, 0.2)', padding: '0.25rem 0.75rem', borderRadius: '4px', letterSpacing: '0.5px' }}>QA LEAD</span>
+        <div className="page-header" style={{ marginBottom: '1.5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+            <h1 className="page-title" style={{ marginBottom: 0 }}>{project.name}</h1>
+            <span className={`badge ${statusBadgeClass}`} style={{ padding: '0.25rem 0.75rem', letterSpacing: '0.5px' }}>{statusLabel}</span>
+            {isReady && <span className="badge badge-success" style={{ padding: '0.25rem 0.75rem' }}>✓ Release ready</span>}
           </div>
-          <div style={{ display: 'flex', gap: '1rem' }}>
-            <Link href={`/dashboard/projects/${project.id}/edit`} className="btn btn-outline" style={{ padding: '0.5rem 1rem', borderColor: 'rgba(255,255,255,0.1)', color: 'var(--text-muted)' }}>
-              ✎ Update Velocity
+          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+            <Link href={`/dashboard/projects/${project.id}/edit`} className="btn btn-outline">
+              ✎ Edit Project
             </Link>
-            <button className="btn btn-danger-outline" style={{ padding: '0.5rem 1rem', background: 'rgba(244, 63, 94, 0.1)', color: '#f43f5e', border: '1px solid rgba(244, 63, 94, 0.2)' }}>
-              🗑 Delete Project
-            </button>
+            <DeleteProjectButton projectId={project.id} projectName={project.name} />
           </div>
         </div>
 
@@ -149,22 +156,22 @@ export default async function ViewProjectPage({ params }: { params: Promise<{ id
         </div>
 
         {/* Metadata Row */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '2rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '1.5rem' }}>
           <div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Project Manager / QA Lead:</div>
-            <div style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-main)' }}>Sarah (Lead A)</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>QA Lead</div>
+            <div style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-main)' }}>{session?.username || '—'}</div>
           </div>
           <div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Product Owner:</div>
-            <div style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-main)' }}>{project.productOwner || 'David Chen (VP Product)'}</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Product Owner</div>
+            <div style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-main)' }}>{project.productOwner || '—'}</div>
           </div>
           <div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Start Date:</div>
-            <div style={{ fontSize: '1rem', fontWeight: 600, color: '#38bdf8' }}>{project.startDate ? new Date(project.startDate).toISOString().split('T')[0] : '2026-08-01'}</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Start Date</div>
+            <div style={{ fontSize: '1rem', fontWeight: 600, color: '#38bdf8' }}>{project.startDate ? new Date(project.startDate).toISOString().split('T')[0] : '—'}</div>
           </div>
           <div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Target Delivery:</div>
-            <div style={{ fontSize: '1rem', fontWeight: 600, color: '#38bdf8' }}>{project.deadline ? new Date(project.deadline).toISOString().split('T')[0] : '2026-09-12'}</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Target Delivery</div>
+            <div style={{ fontSize: '1rem', fontWeight: 600, color: '#38bdf8' }}>{project.deadline ? new Date(project.deadline).toISOString().split('T')[0] : '—'}</div>
           </div>
         </div>
       </div>

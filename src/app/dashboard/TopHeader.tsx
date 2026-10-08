@@ -3,57 +3,69 @@
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 
-export default function TopHeader() {
-  const pathname = usePathname();
-  
-  if (pathname === '/dashboard') {
-    return null;
-  }
+const SECTION_TITLES: Record<string, string> = {
+  projects: 'Projects',
+  testers: 'Team',
+  checkins: 'Daily Check-ins',
+  blockers: 'Blockers',
+};
 
-  // Derive title from pathname
+export default function TopHeader({ username, openBlockers }: { username: string; openBlockers: number }) {
+  const pathname = usePathname();
+
   const segments = pathname.split('/').filter(Boolean);
-  const title = segments.length > 1 ? segments[1].charAt(0).toUpperCase() + segments[1].slice(1) : 'Overview';
+  const section = segments[1];
+  const sectionTitle = section ? SECTION_TITLES[section] || section.charAt(0).toUpperCase() + section.slice(1) : 'Dashboard';
+  const isDetail = segments.length > 2;
 
   return (
     <header className="desktop-header-padding" style={{
-      height: '70px',
+      height: '64px',
       borderBottom: '1px solid var(--border-subtle)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
+      gap: '1rem',
       padding: '0 2rem',
-      background: 'var(--bg-body)',
+      background: 'rgba(11, 17, 32, 0.85)',
+      backdropFilter: 'blur(8px)',
       position: 'sticky',
       top: 0,
       zIndex: 10
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', fontSize: '0.875rem', fontWeight: 500 }}>
-        <span>Workspace</span>
+      <nav aria-label="Breadcrumb" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', fontSize: '0.875rem', fontWeight: 500, minWidth: 0 }}>
+        <Link href="/dashboard">Workspace</Link>
         <span>›</span>
-        <span style={{ color: 'var(--text-main)', fontWeight: 600 }}>{title}</span>
-      </div>
-      
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-        <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-          <span style={{ position: 'absolute', left: '10px', color: 'var(--text-muted)' }}>🔍</span>
-          <input type="text" placeholder="Search anything... ⌘K" className="input" style={{ paddingLeft: '2.2rem', width: '250px' }} />
-        </div>
-      </div>
+        {isDetail ? (
+          <>
+            <Link href={`/${segments[0]}/${section}`}>{sectionTitle}</Link>
+            <span>›</span>
+            <span style={{ color: 'var(--text-main)', fontWeight: 600 }}>Details</span>
+          </>
+        ) : (
+          <span style={{ color: 'var(--text-main)', fontWeight: 600 }}>{sectionTitle}</span>
+        )}
+      </nav>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', paddingLeft: '1rem', borderLeft: '1px solid var(--border-subtle)' }}>
-          <div style={{ position: 'relative', cursor: 'pointer', color: 'var(--text-muted)' }}>
-            🔔
-            <div style={{ position: 'absolute', top: '-5px', right: '-5px', background: 'var(--danger)', width: '16px', height: '16px', borderRadius: '50%', fontSize: '0.6rem', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 'bold' }}>11</div>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }}>
-            <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--bg-hover)', border: '1px solid var(--primary-border)', display: 'flex', alignItems: 'center', justifyItems: 'center', justifyContent: 'center' }}>
-              <span style={{ fontSize: '0.8rem' }}>👩‍💻</span>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)' }}>Sarah (Lead A)</span>
-              <span style={{ fontSize: '0.65rem', color: 'var(--primary)', fontWeight: 600, textTransform: 'uppercase' }}>QA Lead</span>
-            </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+        <Link
+          href="/dashboard/blockers"
+          title={openBlockers > 0 ? `${openBlockers} open blockers` : 'No open blockers'}
+          aria-label={`${openBlockers} open blockers`}
+          style={{ position: 'relative', color: 'var(--text-muted)', fontSize: '1.05rem' }}
+        >
+          🔔
+          {openBlockers > 0 && (
+            <span style={{ position: 'absolute', top: '-6px', right: '-8px', background: 'var(--danger)', minWidth: '16px', height: '16px', padding: '0 4px', borderRadius: '999px', fontSize: '0.6rem', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 'bold' }}>
+              {openBlockers > 99 ? '99+' : openBlockers}
+            </span>
+          )}
+        </Link>
+        <div className="header-search" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', paddingLeft: '1.25rem', borderLeft: '1px solid var(--border-subtle)' }}>
+          <div className="avatar">{username.substring(0, 2).toUpperCase()}</div>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)' }}>{username}</span>
+            <span style={{ fontSize: '0.65rem', color: 'var(--primary)', fontWeight: 600, textTransform: 'uppercase' }}>QA Lead</span>
           </div>
         </div>
       </div>

@@ -1,6 +1,6 @@
-import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { verifyToken } from '@/lib/auth';
+import { getSession } from '@/lib/auth';
+import { prisma } from '@/lib/db';
 import Navigation from './Navigation';
 import TopHeader from './TopHeader';
 
@@ -9,26 +9,24 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const cookieStore = await cookies();
-  const token = cookieStore.get('auth_token')?.value;
-
-  if (!token) {
+  const session = await getSession();
+  if (!session) {
     redirect('/');
   }
 
-  const payload = verifyToken(token);
-  if (!payload) {
-    redirect('/');
-  }
+  const [openBlockers, pendingTesters] = await Promise.all([
+    prisma.blocker.count({ where: { status: 'OPEN' } }),
+    prisma.tester.count({ where: { status: 'PENDING_ASSIGNMENT' } }),
+  ]);
 
   return (
     <div className="layout-wrapper">
-      <Navigation />
-      
+      <Navigation username={session.username} openBlockers={openBlockers} pendingTesters={pendingTesters} />
+
       <div className="main-content">
-        <TopHeader />
-        
-        <main style={{ flex: 1, padding: '2rem' }}>
+        <TopHeader username={session.username} openBlockers={openBlockers} />
+
+        <main className="page-main">
           {children}
         </main>
       </div>

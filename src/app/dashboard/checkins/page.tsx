@@ -2,15 +2,18 @@ import { prisma } from '@/lib/db';
 import styles from './page.module.css';
 import Filters from './Filters';
 import { Prisma } from '@prisma/client';
+import { formatEthiopiaTime } from '@/lib/report';
 
 export const dynamic = 'force-dynamic';
 
-export default async function CheckinsPage({ searchParams }: { searchParams: { [key: string]: string | string[] | undefined } }) {
-  const p_projectId = searchParams.projectId as string | undefined;
-  const p_moduleId = searchParams.moduleId as string | undefined;
-  const p_testerId = searchParams.testerId as string | undefined;
-  const p_date = searchParams.date as string | undefined;
-  const p_hasBlocker = searchParams.hasBlocker as string | undefined;
+export default async function CheckinsPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
+  const sp = await searchParams;
+  const str = (v: string | string[] | undefined) => (typeof v === 'string' && v ? v : undefined);
+  const p_projectId = str(sp.projectId);
+  const p_moduleId = str(sp.moduleId);
+  const p_testerId = str(sp.testerId);
+  const p_date = str(sp.date);
+  const p_hasBlocker = str(sp.hasBlocker);
 
   // Build the Prisma where clause dynamically based on filters
   const whereClause: Prisma.CheckInWhereInput = {};
@@ -43,8 +46,11 @@ export default async function CheckinsPage({ searchParams }: { searchParams: { [
 
   return (
     <div className={styles.container}>
-      <header className={styles.header}>
-        <h1>QA Daily Check-ins</h1>
+      <header className="page-header">
+        <div>
+          <h1 className="page-title">Daily Check-ins</h1>
+          <p className="page-subtitle">{checkIns.length} standup{checkIns.length === 1 ? '' : 's'} submitted via Telegram. Export per-project reports from a project&apos;s Export Report tab.</p>
+        </div>
       </header>
 
       {/* Client-side filtering component */}
@@ -74,13 +80,13 @@ export default async function CheckinsPage({ searchParams }: { searchParams: { [
                   <td>
                     {ci.ethiopiaDate}
                     <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
-                      {new Date(ci.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      {formatEthiopiaTime(ci.date)}
                     </div>
                   </td>
                   <td>{ci.tester.fullName}</td>
                   <td>
                     <div style={{ fontWeight: 500 }}>{ci.project.name}</div>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{ci.module.name}</div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{ci.module?.name || 'Full Project'}</div>
                   </td>
                   <td style={{ maxWidth: '300px' }}>{ci.workCompleted}</td>
                   <td style={{ maxWidth: '300px' }}>

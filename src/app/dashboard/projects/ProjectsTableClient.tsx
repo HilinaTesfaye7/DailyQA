@@ -64,10 +64,6 @@ export default function ProjectsTableClient({ projects, ethiopiaToday }: { proje
               style={{ width: '250px', paddingLeft: '2.2rem', background: 'var(--bg-body)' }} 
             />
           </div>
-          <div style={{ display: 'flex', background: 'var(--bg-body)', borderRadius: '6px', padding: '0.25rem', border: '1px solid var(--border-subtle)' }}>
-            <button className="btn" style={{ background: 'rgba(56,189,248,0.1)', color: '#38bdf8', padding: '0.4rem 0.75rem', borderRadius: '4px', fontSize: '0.75rem' }}># Table</button>
-            <button className="btn" style={{ color: 'var(--text-muted)', padding: '0.4rem 0.75rem', fontSize: '0.75rem' }}>⊞ Grid</button>
-          </div>
         </div>
       </div>
 

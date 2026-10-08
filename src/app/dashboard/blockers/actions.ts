@@ -2,8 +2,10 @@
 
 import { prisma } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
+import { requireSession } from '@/lib/auth';
 
 export async function resolveBlocker(blockerId: string, formData?: FormData) {
+  await requireSession();
   try {
     await prisma.blocker.update({
       where: { id: blockerId },

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { assignTester } from '@/lib/assignments';
 
 export async function POST(request: Request) {
   try {
@@ -18,13 +19,11 @@ export async function POST(request: Request) {
     });
 
     if (data.testerId) {
-      await prisma.assignment.create({
-        data: {
-          testerId: data.testerId,
-          projectId: data.projectId,
-          moduleId: moduleData.id,
-          subProjectId: data.subProjectId || null
-        }
+      await assignTester({
+        testerId: data.testerId,
+        projectId: data.projectId,
+        moduleIds: [moduleData.id],
+        subProjectId: data.subProjectId || null,
       });
     }
 

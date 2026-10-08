@@ -88,7 +88,7 @@ model CheckIn {
   id                 String    @id @default(uuid())
   testerId           String
   projectId          String
-  moduleId           String
+  moduleId           String?   // null = "Full Project" check-in (no specific module)
   date               DateTime  @default(now())
   ethiopiaDate       String    // Stored as YYYY-MM-DD in Africa/Addis_Ababa time
   workCompleted      String
@@ -102,7 +102,7 @@ model CheckIn {
   testsBlocked       Int       @default(0)
   tester             Tester    @relation(fields: [testerId], references: [id])
   project            Project   @relation(fields: [projectId], references: [id])
-  module             Module    @relation(fields: [moduleId], references: [id])
+  module             Module?   @relation(fields: [moduleId], references: [id])
   blockers           Blocker[]
 }
 

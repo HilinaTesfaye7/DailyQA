@@ -4,20 +4,36 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-export default function Navigation() {
+type NavItem = { label: string; path: string; icon: string; addPath?: string; badge?: number; badgeTone?: 'danger' | 'warning' };
+
+export default function Navigation({ username, openBlockers, pendingTesters }: { username: string; openBlockers: number; pendingTesters: number }) {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
 
-  const navItems = [
-    { label: 'Dashboard', path: '/dashboard', icon: '㗊' },
-    { label: 'Projects', path: '/dashboard/projects', icon: '📁', hasAdd: true },
-    { label: 'Team', path: '/dashboard/testers', icon: '👥' },
+  const sections: { title: string; items: NavItem[] }[] = [
+    {
+      title: 'Overview',
+      items: [
+        { label: 'Dashboard', path: '/dashboard', icon: '▦' },
+        { label: 'Projects', path: '/dashboard/projects', icon: '📁', addPath: '/dashboard/projects/new' },
+        { label: 'Team', path: '/dashboard/testers', icon: '👥', badge: pendingTesters, badgeTone: 'warning' },
+      ],
+    },
+    {
+      title: 'Reports',
+      items: [
+        { label: 'Daily Check-ins', path: '/dashboard/checkins', icon: '🗓' },
+        { label: 'Blockers', path: '/dashboard/blockers', icon: '⚠️', badge: openBlockers, badgeTone: 'danger' },
+      ],
+    },
   ];
+
+  const initials = username.substring(0, 2).toUpperCase();
 
   return (
     <>
       {/* Mobile Hamburger Button */}
-      <button 
+      <button
         className="mobile-menu-btn"
         onClick={() => setIsOpen(!isOpen)}
         style={{
@@ -28,18 +44,20 @@ export default function Navigation() {
           background: 'var(--bg-card)',
           border: '1px solid var(--border-subtle)',
           color: 'var(--text-main)',
-          padding: '0.5rem',
-          borderRadius: '6px',
+          padding: '0.5rem 0.65rem',
+          borderRadius: '8px',
           display: 'none',
+          cursor: 'pointer',
         }}
-        aria-label="Toggle Menu"
+        aria-label="Toggle menu"
+        aria-expanded={isOpen}
       >
         ☰
       </button>
 
       {/* Mobile Backdrop */}
       {isOpen && (
-        <div 
+        <div
           style={{
             position: 'fixed',
             inset: 0,
@@ -51,11 +69,11 @@ export default function Navigation() {
       )}
 
       {/* Sidebar */}
-      <aside 
+      <aside
         className={`sidebar ${isOpen ? 'open' : ''}`}
         style={{
           width: '260px',
-          background: 'var(--bg-body)',
+          background: 'var(--bg-sidebar)',
           borderRight: '1px solid var(--border-subtle)',
           display: 'flex',
           flexDirection: 'column',
@@ -69,125 +87,105 @@ export default function Navigation() {
       >
         {/* Brand Header */}
         <div style={{
-          padding: '1.5rem',
+          padding: '1.25rem 1.5rem',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-between',
+          gap: '0.75rem',
           borderBottom: '1px solid var(--border-subtle)'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <div style={{
-              width: '32px',
-              height: '32px',
-              background: 'var(--primary)',
-              borderRadius: '8px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#0f172a',
-              fontWeight: 'bold',
-              boxShadow: '0 0 10px rgba(56, 189, 248, 0.5)'
-            }}>
-              🛡️
-            </div>
-            <div>
-              <h2 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-main)', lineHeight: 1.2 }}>QA Command<br/>Center</h2>
-              <span style={{ fontSize: '0.65rem', color: 'var(--text-dark)' }}>Quality, at a glance</span>
-            </div>
+          <div style={{
+            width: '36px',
+            height: '36px',
+            background: 'linear-gradient(135deg, #38bdf8, #6366f1)',
+            borderRadius: '10px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 0 16px rgba(56, 189, 248, 0.35)'
+          }}>
+            🛡️
           </div>
-          <button style={{ background: 'transparent', border: 'none', color: 'var(--text-dark)', cursor: 'pointer', fontSize: '1rem' }}>
-            &lt;
-          </button>
+          <div>
+            <h2 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)', lineHeight: 1.2 }}>QA Command Center</h2>
+            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Quality, at a glance</span>
+          </div>
         </div>
 
         {/* Nav Links */}
         <div style={{ flex: 1, overflowY: 'auto' }}>
-          <nav style={{ padding: '1.5rem 1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            {navItems.map(item => {
-              const isActive = item.path === '/dashboard' ? pathname === '/dashboard' : pathname.startsWith(item.path);
-              return (
-                <div key={item.path} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <Link href={item.path} onClick={() => setIsOpen(false)} style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.75rem',
-                    padding: '0.75rem 1rem',
-                    borderRadius: '8px',
-                    color: isActive ? 'var(--primary)' : 'var(--text-muted)',
-                    background: isActive ? 'var(--primary-bg)' : 'transparent',
-                    border: isActive ? '1px solid var(--primary-border)' : '1px solid transparent',
-                    fontWeight: 500,
-                    transition: 'all 0.15s',
-                    fontSize: '0.875rem',
-                    flex: 1
-                  }}>
-                    <span>{item.icon}</span>
-                    {item.label}
-                  </Link>
-                  {item.hasAdd && (
-                    <Link href={`${item.path}/new`} style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      width: '32px',
-                      height: '32px',
-                      borderRadius: '8px',
-                      background: 'var(--bg-hover)',
-                      color: 'var(--primary)',
-                      border: '1px solid var(--border-subtle)',
-                      textDecoration: 'none'
-                    }}>+</Link>
-                  )}
-                </div>
-              );
-            })}
+          <nav style={{ padding: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+            {sections.map(section => (
+              <div key={section.title} style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', marginBottom: '0.5rem' }}>
+                <div className="nav-section">{section.title}</div>
+                {section.items.map(item => {
+                  const isActive = item.path === '/dashboard' ? pathname === '/dashboard' : pathname.startsWith(item.path);
+                  return (
+                    <div key={item.path} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <Link href={item.path} onClick={() => setIsOpen(false)} className={`nav-link ${isActive ? 'active' : ''}`} aria-current={isActive ? 'page' : undefined}>
+                        <span style={{ width: '1.1rem', textAlign: 'center' }}>{item.icon}</span>
+                        <span style={{ flex: 1 }}>{item.label}</span>
+                        {!!item.badge && (
+                          <span className={`badge ${item.badgeTone === 'danger' ? 'badge-danger' : 'badge-warning'}`} style={{ fontSize: '0.65rem', padding: '0 0.45rem' }}>
+                            {item.badge}
+                          </span>
+                        )}
+                      </Link>
+                      {item.addPath && (
+                        <Link href={item.addPath} onClick={() => setIsOpen(false)} title={`New ${item.label.slice(0, -1)}`} aria-label={`New ${item.label.slice(0, -1)}`} style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          width: '32px',
+                          height: '32px',
+                          borderRadius: '8px',
+                          background: 'var(--bg-hover)',
+                          color: 'var(--primary)',
+                          border: '1px solid var(--border-subtle)',
+                        }}>+</Link>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
           </nav>
         </div>
 
-        {/* Telegram Live Status */}
+        {/* Telegram Status */}
         <div style={{ padding: '0 1rem 1rem 1rem' }}>
           <div style={{
-            background: 'var(--bg-card)',
+            background: 'var(--bg-body)',
             border: '1px solid var(--border-subtle)',
             borderRadius: '12px',
-            padding: '1rem',
+            padding: '0.85rem 1rem',
             display: 'flex',
             flexDirection: 'column',
-            gap: '0.5rem'
+            gap: '0.35rem'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--success)', boxShadow: '0 0 8px var(--success)' }}></div>
-              <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-main)' }}>Telegram Bot Live</span>
+              <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)' }}>Telegram standups</span>
             </div>
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-dark)', lineHeight: 1.4 }}>
-              Connected: Coco (tester) daily standups automatically synced
+            <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', lineHeight: 1.4 }}>
+              Tester check-ins submitted via the bot sync here automatically.
             </p>
           </div>
         </div>
 
         {/* Profile & Logout Footer */}
         <div style={{ padding: '1rem', borderTop: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'var(--bg-hover)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--primary-border)' }}>
-              <span style={{ fontSize: '1rem' }}>👩‍💻</span>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-main)' }}>Sarah (Lead A)</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: 0 }}>
+            <div className="avatar" style={{ width: '36px', height: '36px' }}>{initials}</div>
+            <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+              <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-main)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{username}</span>
               <span style={{ fontSize: '0.65rem', color: 'var(--primary)', fontWeight: 600, letterSpacing: '0.5px' }}>QA LEAD</span>
             </div>
           </div>
-          
-          <button onClick={() => fetch('/api/auth/logout', { method: 'POST' }).then(() => window.location.href='/')} style={{
-            background: 'rgba(244, 63, 94, 0.1)',
-            border: '1px solid rgba(244, 63, 94, 0.2)',
-            color: 'var(--danger)',
-            padding: '0.4rem 0.75rem',
-            borderRadius: '6px',
-            fontSize: '0.75rem',
-            fontWeight: 600,
-            cursor: 'pointer',
-            transition: 'background 0.2s'
-          }}>
+
+          <button
+            onClick={() => fetch('/api/auth/logout', { method: 'POST' }).then(() => { window.location.href = '/'; })}
+            className="btn btn-danger-outline btn-sm"
+          >
             Logout
           </button>
         </div>

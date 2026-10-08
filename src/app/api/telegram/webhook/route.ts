@@ -1,7 +1,24 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { sendTelegramMessage } from '@/lib/telegram';
+
+const LEAD_AUTH_PASSWORD = process.env.LEAD_AUTH_PASSWORD || 'secret_lead_2026';
+
+const notifyLeads = async (msg: string) => {
+  const leads = await prisma.qALead.findMany({ where: { telegramId: { not: null } } });
+  for (const lead of leads) {
+    await sendTelegramMessage(lead.telegramId!, msg, { markdown: true });
+  }
+};
 
 export async function POST(request: Request) {
+  // When TELEGRAM_WEBHOOK_SECRET is set (and passed as secret_token to setWebhook),
+  // reject requests that did not come from Telegram.
+  const webhookSecret = process.env.TELEGRAM_WEBHOOK_SECRET;
+  if (webhookSecret && request.headers.get('x-telegram-bot-api-secret-token') !== webhookSecret) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const update = await request.json();
 
@@ -12,17 +29,7 @@ export async function POST(request: Request) {
     const telegramId = update.message.chat.id.toString();
     const text = update.message.text.trim();
 
-    const sendMessage = async (msg: string) => {
-      console.log(`\n[TELEGRAM OUTBOUND -> ${telegramId}]:\n${msg}\n`);
-      const token = process.env.TELEGRAM_BOT_TOKEN;
-      if (token) {
-        await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ chat_id: telegramId, text: msg })
-        }).catch(err => console.error('Telegram API error:', err));
-      }
-    };
+    const sendMessage = (msg: string) => sendTelegramMessage(telegramId, msg);
 
     let qaLead = await prisma.qALead.findUnique({
       where: { telegramId }
@@ -43,7 +50,7 @@ export async function POST(request: Request) {
     // --- QA LEAD COMMANDS ---
     if (text.startsWith('/lead_auth ')) {
       const password = text.split(' ')[1];
-      if (password === 'secret_lead_2026') { // Hardcoded for demo/simplicity
+      if (password === LEAD_AUTH_PASSWORD) {
         // Get the first QA lead from DB to attach to
         const lead = await prisma.qALead.findFirst();
         if (lead) {
@@ -176,14 +183,9 @@ export async function POST(request: Request) {
     if (tester && tester.botState === 'AWAITING_ROLE') {
       const role = text.toLowerCase();
       if (role === 'lead') {
+        // Leads must prove they are leads; otherwise anyone could subscribe to all project alerts.
         await prisma.tester.delete({ where: { id: tester.id } });
-        await prisma.qALead.create({
-          data: {
-            username: telegramId,
-            passwordHash: 'N/A',
-            telegramId: telegramId
-          }
-        }); await sendMessage('✅ Successfully registered as QA Lead. You will receive blocker and achievement alerts.\n\nAvailable commands:\n/status - Basic project status\n/report - Daily check-in report\n/readiness - Overall project readiness');
+        await sendMessage('To link this chat as a QA Lead, send:\n/lead_auth <lead password>\n\nAvailable commands after linking:\n/status - Basic project status\n/report - Daily check-in report\n/readiness - Overall project readiness');
       } else if (role === 'tester') {
         await prisma.tester.update({
           where: { telegramId },
@@ -207,16 +209,8 @@ export async function POST(request: Request) {
              }
            });
            
-           // Notify QA Lead
-           const leads = await prisma.qALead.findMany({ where: { telegramId: { not: null } } });
-           for (const lead of leads) {
-             const alertMsg = `📝 *New Test Case Submitted*\n\nTester: ${tester.fullName}\nProject ID: ${tester.botProjectId}\nLink/Text: ${text}`;
-             await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
-               method: 'POST',
-               headers: { 'Content-Type': 'application/json' },
-               body: JSON.stringify({ chat_id: lead.telegramId, text: alertMsg, parse_mode: 'Markdown' })
-             });
-           }
+           const project = await prisma.project.findUnique({ where: { id: tester.botProjectId }, select: { name: true } });
+           await notifyLeads(`📝 *New Test Case Submitted*\n\nTester: ${tester.fullName}\nProject: ${project?.name || tester.botProjectId}\nLink/Text: ${text}`);
         }
       }
       
@@ -312,15 +306,8 @@ export async function POST(request: Request) {
           include: { checkIn: { include: { project: true } } }
         });
         
-        const leads = await prisma.qALead.findMany({ where: { telegramId: { not: null } } });
-        for (const lead of leads) {
-          const alertMsg = `✅ *Blocker Resolved*\n\nTester: ${tester.fullName}\nProject: ${blocker.checkIn.project.name}\nBlocker: ${blocker.description}`;
-          await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chat_id: lead.telegramId, text: alertMsg, parse_mode: 'Markdown' })
-          }).catch(() => {});
-        } await sendMessage('Great! Blocker marked as resolved.');
+        await notifyLeads(`✅ *Blocker Resolved*\n\nTester: ${tester.fullName}\nProject: ${blocker.checkIn.project.name}\nBlocker: ${blocker.description}`);
+        await sendMessage('Great! Blocker marked as resolved.');
       } else if (normalized === 'no' || normalized === 'n') { await sendMessage('Okay, blocker remains open.');
       } else { await sendMessage('Please reply with Yes or No.');
         return NextResponse.json({ success: true });
@@ -644,7 +631,7 @@ export async function POST(request: Request) {
         data: {
           testerId: tester.id,
           projectId: tester.botProjectId!,
-          moduleId: tester.botModuleId === 'NONE' ? '' : tester.botModuleId!,
+          moduleId: !tester.botModuleId || tester.botModuleId === 'NONE' ? null : tester.botModuleId,
           ethiopiaDate: ethiopiaDate,
           workCompleted: payload.workCompleted,
           hasBlocker: payload.hasBlocker,
@@ -668,40 +655,28 @@ export async function POST(request: Request) {
         });
       }
 
-      // Proactive QA Lead Notifications
-      const leads = await prisma.qALead.findMany({
-        where: { telegramId: { not: null } }
-      });
-      
-      for (const lead of leads) {
-        if (payload.hasBlocker) {
-          const alertMsg = `🚨 *New Blocker Alert*\n\nTester: ${tester.fullName}\nProject ID: ${tester.botProjectId}\nBlocker: ${payload.blockerDescription}`;
-          await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chat_id: lead.telegramId, text: alertMsg, parse_mode: 'Markdown' })
-          });
-        }
-        if (payload.achievement && payload.achievement.toLowerCase() !== 'none') {
-          const alertMsg = `🎉 *Achievement Unlocked*\n\nTester: ${tester.fullName}\nProject ID: ${tester.botProjectId}\nAchievement: ${payload.achievement}`;
-          await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chat_id: lead.telegramId, text: alertMsg, parse_mode: 'Markdown' })
-          });
-        }
-      }
-
-      // Reset state completely
+      // Reset state before notifying so a notification failure can't cause a duplicate check-in.
       await prisma.tester.update({
         where: { telegramId },
-        data: { 
+        data: {
           botState: 'IDLE',
           botProjectId: null,
           botModuleId: null,
           botStateData: null
         }
-      }); await sendMessage('✅ Daily QA check-in submitted.');
+      });
+
+      // Proactive QA Lead Notifications
+      const checkInProject = await prisma.project.findUnique({ where: { id: checkIn.projectId }, select: { name: true } });
+      const projectLabel = checkInProject?.name || checkIn.projectId;
+      if (payload.hasBlocker) {
+        await notifyLeads(`🚨 *New Blocker Alert*\n\nTester: ${tester.fullName}\nProject: ${projectLabel}\nBlocker: ${payload.blockerDescription}`);
+      }
+      if (payload.achievement && payload.achievement.toLowerCase() !== 'none') {
+        await notifyLeads(`🎉 *Achievement Unlocked*\n\nTester: ${tester.fullName}\nProject: ${projectLabel}\nAchievement: ${payload.achievement}`);
+      }
+
+      await sendMessage('✅ Daily QA check-in submitted.');
       return NextResponse.json({ success: true });
     }
 
@@ -712,6 +687,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Webhook error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    // Return 200 so Telegram doesn't redeliver the same update in a retry loop.
+    return NextResponse.json({ success: false });
   }
 }

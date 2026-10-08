@@ -17,7 +17,8 @@ export default function ProjectForm({ initialData = null }: { initialData?: any 
     deadline: initialData?.deadline ? new Date(initialData.deadline).toISOString().split('T')[0] : '',
     prdLink: initialData?.prdLink || '',
     figmaLink: initialData?.figmaLink || '',
-    status: initialData?.status || 'ACTIVE',
+    // 'IN PROGRESS' (set from the projects table) and 'ACTIVE' mean the same thing.
+    status: !initialData?.status || initialData.status === 'IN PROGRESS' ? 'ACTIVE' : initialData.status,
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -75,7 +76,10 @@ export default function ProjectForm({ initialData = null }: { initialData?: any 
         <div>
           <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-muted)' }}>Status *</label>
           <select name="status" className="input" value={formData.status} onChange={handleChange} required>
-            <option value="ACTIVE">Active</option>
+            <option value="ACTIVE">In Progress</option>
+            <option value="READY FOR RELEASE">Ready for Release</option>
+            <option value="BLOCKED">Blocked</option>
+            <option value="COMPLETED">Completed</option>
             <option value="INACTIVE">Inactive</option>
           </select>
         </div>

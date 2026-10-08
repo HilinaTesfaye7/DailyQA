@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import ExportReportTab from './ExportReportTab';
 
 export default function ProjectTabsClient({ project, uniqueMembersCount, dailyStandupsCount, isReady, openBlockers, progress, testsExecuted, testsPassed, testsFailed, testsBlocked, availableTesters, moduleMetrics }: any) {
   const router = useRouter();
@@ -63,7 +64,12 @@ export default function ProjectTabsClient({ project, uniqueMembersCount, dailySt
         <button className={`tab ${activeTab === 'testcases' ? 'active' : ''}`} onClick={() => setActiveTab('testcases')} style={{ padding: '1rem 0', background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '1rem', color: activeTab === 'testcases' ? 'var(--primary)' : 'var(--text-muted)' }}>✅ Test Cases</button>
         <button className={`tab ${activeTab === 'members' ? 'active' : ''}`} onClick={() => setActiveTab('members')} style={{ padding: '1rem 0', background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '1rem', color: activeTab === 'members' ? 'var(--primary)' : 'var(--text-muted)' }}>👥 Members ({uniqueMembersCount})</button>
         <button className={`tab ${activeTab === 'standups' ? 'active' : ''}`} onClick={() => setActiveTab('standups')} style={{ padding: '1rem 0', background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '1rem', color: activeTab === 'standups' ? 'var(--primary)' : 'var(--text-muted)' }}>⏱ Daily Standups ({dailyStandupsCount})</button>
+        <button className={`tab ${activeTab === 'export' ? 'active' : ''}`} onClick={() => setActiveTab('export')} style={{ padding: '1rem 0', background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '1rem', color: activeTab === 'export' ? 'var(--primary)' : 'var(--text-muted)' }}>📥 Export Report</button>
       </div>
+
+      {activeTab === 'export' && (
+        <ExportReportTab projectId={project.id} projectName={project.name} checkIns={project.checkIns} />
+      )}
 
       {activeTab === 'prd' && (
         <div className="card" style={{ padding: '2rem', marginBottom: '2rem' }}>
@@ -77,28 +83,16 @@ export default function ProjectTabsClient({ project, uniqueMembersCount, dailySt
                 Open External Document ↗
               </a>
             ) : (
-              <button disabled className="btn btn-outline" style={{ color: '#38bdf8', borderColor: 'rgba(56,189,248,0.3)', background: 'rgba(56,189,248,0.1)' }}>Add PRD Link +</button>
+              <Link href={`/dashboard/projects/${project.id}/edit`} className="btn btn-accent">Add PRD Link +</Link>
             )}
           </div>
           
-          <div style={{ background: 'var(--bg-body)', border: '1px solid var(--border-subtle)', borderRadius: '8px', padding: '1.5rem', marginBottom: '2rem' }}>
+          <div style={{ background: 'var(--bg-body)', border: '1px solid var(--border-subtle)', borderRadius: '8px', padding: '1.5rem' }}>
             {project.prdLink ? (
               <p style={{ color: 'var(--text-dark)' }}>The PRD document is linked and ready for review.</p>
             ) : (
-              <p style={{ color: 'var(--text-muted)' }}>No PRD specifications provided.</p>
+              <p style={{ color: 'var(--text-muted)' }}>No PRD specifications provided. Add a PRD link from <Link href={`/dashboard/projects/${project.id}/edit`} style={{ color: 'var(--primary)' }}>Edit Project</Link>.</p>
             )}
-          </div>
-
-          <h3 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '1rem' }}>Key Acceptance Requirements</h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', background: 'var(--bg-body)', border: '1px solid var(--border-subtle)', borderRadius: '8px' }}>
-              <span style={{ color: 'var(--text-main)', fontSize: '0.875rem', fontWeight: 500 }}>REQ-01: Authentication & Token Lifecycle</span>
-              <span className="badge" style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '0.25rem 0.5rem', borderRadius: '4px' }}>Verified Scope</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', background: 'var(--bg-body)', border: '1px solid var(--border-subtle)', borderRadius: '8px' }}>
-              <span style={{ color: 'var(--text-main)', fontSize: '0.875rem', fontWeight: 500 }}>REQ-02: Core Feature Flow and Business Logic Validation</span>
-              <span className="badge" style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '0.25rem 0.5rem', borderRadius: '4px' }}>Verified Scope</span>
-            </div>
           </div>
         </div>
       )}
@@ -113,7 +107,7 @@ export default function ProjectTabsClient({ project, uniqueMembersCount, dailySt
           ) : (
             <div style={{ padding: '3rem', border: '1px dashed var(--border-subtle)', borderRadius: '8px' }}>
               <p style={{ color: 'var(--text-muted)', marginBottom: '1rem' }}>No Figma design linked for this project.</p>
-              <button className="btn btn-outline" style={{ color: '#38bdf8', borderColor: 'rgba(56,189,248,0.3)', background: 'rgba(56,189,248,0.1)' }}>+ Add Figma Link</button>
+              <Link href={`/dashboard/projects/${project.id}/edit`} className="btn btn-accent">+ Add Figma Link</Link>
             </div>
           )}
         </div>
@@ -234,9 +228,12 @@ export default function ProjectTabsClient({ project, uniqueMembersCount, dailySt
 
       {activeTab === 'standups' && (
         <div className="card" style={{ padding: '2rem', marginBottom: '2rem', overflowX: 'auto' }}>
-           <div style={{ marginBottom: '1.5rem' }}>
-             <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--text-main)' }}>Daily Team Standups & Check-Ins</h2>
-             <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>Live responses submitted via Telegram Bot and Web Command Center</span>
+           <div className="page-header" style={{ marginBottom: '1.5rem' }}>
+             <div>
+               <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--text-main)' }}>Daily Team Standups & Check-Ins</h2>
+               <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>Responses submitted via the Telegram bot, newest first</span>
+             </div>
+             <button onClick={() => setActiveTab('export')} className="btn btn-accent">📥 Export daily / weekly / monthly</button>
            </div>
            
            {project.checkIns.length === 0 ? (

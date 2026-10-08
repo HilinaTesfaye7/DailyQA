@@ -31,12 +31,17 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
         where: { testerId: id }
       });
 
-      // 3. Delete Assignments
+      // 3. Delete submitted Test Cases (FK to Tester)
+      await tx.testCase.deleteMany({
+        where: { testerId: id }
+      });
+
+      // 4. Delete Assignments
       await tx.assignment.deleteMany({
         where: { testerId: id }
       });
 
-      // 4. Delete Tester
+      // 5. Delete Tester
       await tx.tester.delete({
         where: { id }
       });

@@ -15,15 +15,11 @@ export default async function AssignTesterPage({ params }: { params: Promise<{ i
 
   // Fetch all active projects with their complete hierarchy
   const projects = await prisma.project.findMany({
-    where: { status: 'ACTIVE' },
+    where: { status: { notIn: ['COMPLETED', 'INACTIVE'] } },
     include: {
-      subProjects: {
-        include: { modules: true }
-      },
-      modules: {
-        where: { subProjectId: null } // Direct modules
-      }
-    }
+      modules: true
+    },
+    orderBy: { name: 'asc' }
   });
 
   return (

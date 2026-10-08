@@ -25,7 +25,11 @@ export default async function TestersPage() {
 
   const activeTesters = testers.filter(t => t.status === 'ACTIVE');
   
-  const projects = await prisma.project.findMany();
+  const activeProjects = await prisma.project.findMany({
+    where: { status: { notIn: ['COMPLETED', 'INACTIVE'] } },
+    select: { id: true, _count: { select: { assignments: true } } }
+  });
+  const staffedProjects = activeProjects.filter(p => p._count.assignments > 0).length;
   
   let overloadedCount = 0;
   activeTesters.forEach(t => {
@@ -45,15 +49,10 @@ export default async function TestersPage() {
           </div>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>Manage QA engineers, workload balance, project assignments, and check-in history.</p>
         </div>
-        <div style={{ display: 'flex', gap: '1rem' }}>
-          <button className="btn btn-outline" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#10b981', borderColor: 'rgba(16,189,129,0.3)', background: 'rgba(16,189,129,0.05)' }}>
-            <span style={{ fontSize: '1rem' }}>↻</span> Sync Cloud
-          </button>
-        </div>
       </div>
 
       {/* KPI Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
         <div className="card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
           <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Total Team Size</span>
           <span style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--text-main)' }}>{testers.length} Engineers</span>
@@ -61,29 +60,15 @@ export default async function TestersPage() {
         </div>
         <div className="card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
           <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Active Projects</span>
-          <span style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--text-main)' }}>{projects.length} Portfolios</span>
-          <span style={{ fontSize: '0.75rem', color: '#10b981' }}>100% allocation coverage</span>
+          <span style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--text-main)' }}>{activeProjects.length} Projects</span>
+          <span style={{ fontSize: '0.75rem', color: activeProjects.length - staffedProjects > 0 ? '#f59e0b' : '#10b981' }}>
+            {staffedProjects} of {activeProjects.length} have testers assigned
+          </span>
         </div>
         <div className="card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.25rem', border: overloadedCount > 0 ? '1px solid rgba(244,63,94,0.3)' : undefined }}>
           <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Overloaded Status</span>
           <span style={{ fontSize: '1.5rem', fontWeight: 'bold', color: overloadedCount > 0 ? '#f43f5e' : 'var(--text-main)' }}>{overloadedCount} Members</span>
           <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Attention recommended</span>
-        </div>
-      </div>
-
-      {/* Controls Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <div style={{ display: 'flex', gap: '1rem', borderBottom: '1px solid var(--border-subtle)' }}>
-          <div style={{ padding: '0.75rem 1.5rem', color: '#38bdf8', borderBottom: '2px solid #38bdf8', fontWeight: 600, fontSize: '0.875rem' }}>
-            All Roles
-          </div>
-          <div style={{ padding: '0.75rem 1.5rem', color: 'var(--text-muted)', fontSize: '0.875rem', cursor: 'pointer' }}>
-            QA Testers
-          </div>
-        </div>
-        <div style={{ position: 'relative' }}>
-          <span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>🔍</span>
-          <input type="text" placeholder="Search member or skill..." className="input" style={{ width: '250px', paddingLeft: '2.2rem', background: 'var(--bg-card)', fontSize: '0.75rem' }} />
         </div>
       </div>
 
@@ -110,7 +95,7 @@ export default async function TestersPage() {
                     {tester.fullName.substring(0, 2).toUpperCase()}
                   </div>
                   <div>
-                    <h2 style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-main)' }}>{tester.fullName}</h2>
+                    <h2 style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-main)' }}><Link href={`/dashboard/testers/${tester.id}`}>{tester.fullName}</Link></h2>
                     <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>✉ {tester.telegramId}</span>
                   </div>
                 </div>

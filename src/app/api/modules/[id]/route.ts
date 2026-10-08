@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { assignTester } from '@/lib/assignments';
 
 export async function PUT(
   request: Request,
@@ -22,35 +23,13 @@ export async function PUT(
     });
 
     if (data.testerId) {
-      // Check if assignment already exists
-      const existingAssignment = await prisma.assignment.findFirst({
-        where: {
-          testerId: data.testerId,
-          projectId: data.projectId,
-          moduleId: id
-        }
+      // Skips existing assignments; notifies the tester only for new ones.
+      await assignTester({
+        testerId: data.testerId,
+        projectId: data.projectId,
+        moduleIds: [id],
+        subProjectId: data.subProjectId || null,
       });
-      if (!existingAssignment) {
-        await prisma.assignment.create({
-          data: {
-            testerId: data.testerId,
-            projectId: data.projectId,
-            subProjectId: data.subProjectId || null,
-            moduleId: id
-          }
-        });
-        
-        // Notify tester
-        await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/assignments`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            testerId: data.testerId,
-            projectId: data.projectId,
-            moduleIds: [id]
-          })
-        }).catch(e => console.error('Failed to trigger assignment notification', e));
-      }
     }
 
     return NextResponse.json({ success: true, module: moduleData });

@@ -18,9 +18,9 @@
 }
 
 .filtersCard {
-  background: rgba(30, 30, 35, 0.4);
+  background: var(--bg-card);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-subtle);
   border-radius: 12px;
   padding: 1.5rem;
   display: flex;
@@ -64,7 +64,7 @@
 .button {
   padding: 0.75rem 1.5rem;
   background: var(--primary);
-  color: white;
+  color: #0f172a;
   border: none;
   border-radius: 8px;
   font-weight: 500;
@@ -88,9 +88,9 @@
 }
 
 .tableContainer {
-  background: rgba(30, 30, 35, 0.4);
+  background: var(--bg-card);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-subtle);
   border-radius: 12px;
   overflow-x: auto;
 }

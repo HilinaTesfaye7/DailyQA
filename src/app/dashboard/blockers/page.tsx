@@ -6,16 +6,19 @@ import { Prisma } from '@prisma/client';
 
 export const dynamic = 'force-dynamic';
 
-export default async function BlockersPage({ searchParams }: { searchParams: { [key: string]: string | string[] | undefined } }) {
-  const p_projectId = searchParams.projectId as string | undefined;
-  const p_moduleId = searchParams.moduleId as string | undefined;
-  const p_testerId = searchParams.testerId as string | undefined;
-  const p_status = (searchParams.status as string) || 'OPEN';
+export default async function BlockersPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
+  const sp = await searchParams;
+  const str = (v: string | string[] | undefined) => (typeof v === 'string' && v ? v : undefined);
+  const p_projectId = str(sp.projectId);
+  const p_moduleId = str(sp.moduleId);
+  const p_testerId = str(sp.testerId);
+  // Default to OPEN; "ALL" shows every status.
+  const p_status = str(sp.status) || 'OPEN';
 
   // Build the Prisma where clause dynamically based on filters
   const whereClause: Prisma.BlockerWhereInput = {};
 
-  if (p_status) whereClause.status = p_status;
+  if (p_status !== 'ALL') whereClause.status = p_status;
 
   if (p_projectId || p_moduleId || p_testerId) {
     whereClause.checkIn = {};
@@ -48,8 +51,11 @@ export default async function BlockersPage({ searchParams }: { searchParams: { [
 
   return (
     <div className={styles.container}>
-      <header className={styles.header}>
-        <h1>Blocker Management</h1>
+      <header className="page-header">
+        <div>
+          <h1 className="page-title">Blockers</h1>
+          <p className="page-subtitle">{blockers.length} {p_status === 'ALL' ? '' : p_status.toLowerCase() + ' '}blocker{blockers.length === 1 ? '' : 's'} reported in daily standups.</p>
+        </div>
       </header>
 
       {/* Client-side filtering component */}
@@ -84,7 +90,7 @@ export default async function BlockersPage({ searchParams }: { searchParams: { [
                   <td>{b.checkIn.tester.fullName}</td>
                   <td>
                     <div style={{ fontWeight: 500 }}>{b.checkIn.project.name}</div>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{b.checkIn.module.name}</div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{b.checkIn.module?.name || 'Full Project'}</div>
                   </td>
                   <td style={{ maxWidth: '400px', color: '#fca5a5' }}>
                     {b.description}

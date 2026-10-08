@@ -36,7 +36,7 @@ export default function Filters({ projects, modules, testers }: { projects: any[
       <div className={styles.filterGroup}>
         <label>Status</label>
         <select className={styles.select} value={status} onChange={e => setStatus(e.target.value)}>
-          <option value="">All Statuses</option>
+          <option value="ALL">All Statuses</option>
           <option value="OPEN">Open</option>
           <option value="RESOLVED">Resolved</option>
         </select>

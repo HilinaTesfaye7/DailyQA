@@ -37,7 +37,7 @@ export default async function ProjectsListPage() {
             <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>Projects you have explicit authorization and role membership in</p>
           </div>
           <Link href="/dashboard/projects/new" className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem' }}>
-            <span>+</span> + New Project
+            + New Project
           </Link>
         </div>
 
